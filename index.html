@@ -349,6 +349,8 @@
     }
     .saved-card-del:hover{color:#ef4444;background:rgba(239,68,68,.1)}
     .icon-btn.is-saved{color:#f59e0b}
+    .saved-cat-group{margin-bottom:22px}
+    .saved-cat-header{display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
   </style>
 </head>
 <body>
@@ -1076,19 +1078,34 @@ function renderSavedSection() {
     return;
   }
   section.classList.add('has-items');
-  grid.innerHTML = saved.map((entry, i) => {
-    const date = new Date(entry.savedAt).toLocaleDateString('he-IL');
-    return `
-      <div class="saved-card" onclick="openSavedRecipe(${i})">
-        <span class="saved-card-emoji">${entry.categoryEmoji}</span>
-        <div class="saved-card-info">
-          <div class="saved-card-title">${entry.recipe.title}</div>
-          <div class="saved-card-meta">${entry.recipe.prepTime || ''} ${entry.recipe.cookTime ? '· בישול ' + entry.recipe.cookTime : ''} · נשמר ${date}</div>
-        </div>
-        <button class="saved-card-del" onclick="deleteSavedRecipe(${i}, event)" title="מחק">✕</button>
-      </div>
-    `;
-  }).join('');
+
+  // Group by category, preserving CATEGORIES order
+  const groups = {};
+  saved.forEach((entry, i) => {
+    if (!groups[entry.categoryId]) groups[entry.categoryId] = [];
+    groups[entry.categoryId].push({ entry, i });
+  });
+
+  grid.innerHTML = CATEGORIES
+    .filter(cat => groups[cat.id])
+    .map(cat => {
+      const cards = groups[cat.id].map(({ entry, i }) => {
+        const date = new Date(entry.savedAt).toLocaleDateString('he-IL');
+        return `
+          <div class="saved-card" onclick="openSavedRecipe(${i})">
+            <div class="saved-card-info">
+              <div class="saved-card-title">${entry.recipe.title}</div>
+              <div class="saved-card-meta">${entry.recipe.prepTime || ''}${entry.recipe.cookTime ? ' · בישול ' + entry.recipe.cookTime : ''} · נשמר ${date}</div>
+            </div>
+            <button class="saved-card-del" onclick="deleteSavedRecipe(${i}, event)" title="מחק">✕</button>
+          </div>`;
+      }).join('');
+      return `
+        <div class="saved-cat-group">
+          <div class="saved-cat-header">${cat.emoji} &nbsp;${cat.name}</div>
+          <div class="saved-grid">${cards}</div>
+        </div>`;
+    }).join('');
 }
 
 // ═══════════════════════════════════════
